@@ -210,6 +210,24 @@ class DebitCardControllerTest extends TestCase
     public function testCustomerCanDeleteADebitCard()
     {
         // delete api/debit-cards/{debitCard}
+        $activeDebitCard = DebitCard::factory()->active()->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        Passport::actingAs($this->user);
+
+        // check if user is authenticated
+        $this->assertAuthenticatedAs($this->user);
+
+        $this->deleteJson('api/debit-cards/' . $activeDebitCard->id)
+            ->assertNoContent();  // returned status 204
+
+        $this->assertSoftDeleted('debit_cards', [
+            'id' => $activeDebitCard->id,
+            'number' => intval($activeDebitCard->number),
+            'type' => $activeDebitCard->type,
+            'user_id' => $activeDebitCard->user->id,
+        ]);
     }
 
     public function testCustomerCannotDeleteADebitCardWithTransaction()
