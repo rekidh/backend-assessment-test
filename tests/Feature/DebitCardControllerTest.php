@@ -191,6 +191,20 @@ class DebitCardControllerTest extends TestCase
     public function testCustomerCannotUpdateADebitCardWithWrongValidation()
     {
         // put api/debit-cards/{debitCard}
+        $inactiveDebitCard = DebitCard::factory()->expired()->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        Passport::actingAs($this->user);
+
+        // check if user is authenticated
+        $this->assertAuthenticatedAs($this->user);
+
+        $this->putJson('api/debit-cards/' . $inactiveDebitCard->id, [
+            'is_active' => 'giving a sting rather than boolean' // wrong validation
+        ])
+            ->assertUnprocessable() // returned status 422
+            ->assertInvalid(['is_active']);
     }
 
     public function testCustomerCanDeleteADebitCard()
