@@ -255,4 +255,13 @@ class DebitCardControllerTest extends TestCase
     }
 
     // Extra bonus for extra tests :)
+    public function testCustomerCannotSeeListOfDebitCardsIfNotAuthenticated()
+    {
+        // * get /debit-cards
+        $this->getJson('api/debit-cards')
+            ->assertUnauthorized()
+            ->assertJson(
+                fn ($json) => $json->where('message', 'Unauthenticated.')
+            );
+    }
 }
