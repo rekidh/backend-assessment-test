@@ -55,6 +55,21 @@ class DebitCardControllerTest extends TestCase
 
     public function testCustomerCannotSeeAListOfDebitCardsOfOtherCustomers()
     {
+        // * get api/debit-cards
+
+        Passport::actingAs($this->user);
+        $anotherUser = User::factory()->create();
+        DebitCard::factory()->active()->count(5)->create([
+            'user_id' => $anotherUser->id,
+        ]);
+
+        // check if user is authenticated
+        $this->assertAuthenticatedAs($this->user);
+
+        // check the user can not see debit cards for other user/s
+        $this->getJson('api/debit-cards')
+            ->assertOk()
+            ->assertJsonCount(0);
         // get /debit-cards
     }
 
