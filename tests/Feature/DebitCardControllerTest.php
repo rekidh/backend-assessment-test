@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\DebitCard;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
+use Illuminate\Testing\Fluent\AssertableJson;
 
 class DebitCardControllerTest extends TestCase
 {
@@ -22,7 +24,33 @@ class DebitCardControllerTest extends TestCase
 
     public function testCustomerCanSeeAListOfDebitCards()
     {
-        // get /debit-cards
+        // * get api/debit-cards
+
+        $debitCards = DebitCard::factory()->active()->count(5)->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        Passport::actingAs($this->user);
+
+        // check if user is authenticated
+        $this->assertAuthenticatedAs($this->user);
+
+        // check the user can see its own debit cards
+        $this->getJson('api/debit-cards')
+            ->assertOk()
+            ->assertJsonCount($debitCards->count())
+            ->assertJson(
+                fn (AssertableJson $json) =>
+                $json->first(
+                    fn ($json) =>
+                    $json->where('number', intval($debitCards->first()->number))
+                        ->where('type', $debitCards->first()->type)
+                        ->where('is_active', true)
+                        ->where('expiration_date', date_format($debitCards->first()->expiration_date, 'Y-m-d H:i:s'))
+                        ->where('id', $debitCards->first()->id)
+                        ->etc()
+                )
+            ); // get /debit-cards
     }
 
     public function testCustomerCannotSeeAListOfDebitCardsOfOtherCustomers()
