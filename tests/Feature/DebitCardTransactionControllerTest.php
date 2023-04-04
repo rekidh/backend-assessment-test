@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\DebitCardTransaction;
+use Illuminate\Testing\Fluent\AssertableJson;
 use App\Models\DebitCard;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +30,30 @@ class DebitCardTransactionControllerTest extends TestCase
     public function testCustomerCanSeeAListOfDebitCardTransactions()
     {
         // get /debit-card-transactions
+        $debitCard = DebitCard::factory()->active()->create([
+            'user_id' => $this->user->id
+        ]);
+
+        // check if user is authenticated
+        $this->assertAuthenticatedAs($this->user);
+
+        // create some transactions for the above debit card
+        $debitCardTransactions =  DebitCardTransaction::factory()->count(10)->create([
+            'debit_card_id' => $debitCard->id
+        ]);
+
+        $this->getJson('api/debit-card-transactions/' .  $debitCard->id)
+            ->assertOk()
+            ->assertJsonCount($debitCardTransactions->count())
+            ->assertJson(
+                fn (AssertableJson $json) =>
+                $json->first(
+                    fn ($json) => $json
+                        ->where('amount', intval($debitCardTransactions->first()->amount))
+                        ->where('currency_code', $debitCardTransactions->first()->currency_code)
+                        ->etc()
+                )
+            );
     }
 
     public function testCustomerCannotSeeAListOfDebitCardTransactionsOfOtherCustomerDebitCard()
