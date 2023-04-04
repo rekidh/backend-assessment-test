@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 use Illuminate\Testing\Fluent\AssertableJson;
+use App\Models\DebitCardTransaction;
 
 class DebitCardControllerTest extends TestCase
 {
@@ -233,6 +234,24 @@ class DebitCardControllerTest extends TestCase
     public function testCustomerCannotDeleteADebitCardWithTransaction()
     {
         // delete api/debit-cards/{debitCard}
+        $activeDebitCard = DebitCard::factory()->active()->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        DebitCardTransaction::factory()->count(5)->create([
+            'debit_card_id' => $activeDebitCard->id
+        ]);
+
+        Passport::actingAs($this->user);
+
+        // check if user is authenticated
+        $this->assertAuthenticatedAs($this->user);
+
+        $this->deleteJson('api/debit-cards/' . $activeDebitCard->id)
+            ->assertForbidden()  // returned status 403
+            ->assertJson(
+                fn ($json) => $json->where('message', 'This action is unauthorized.')->etc()
+            );
     }
 
     // Extra bonus for extra tests :)
