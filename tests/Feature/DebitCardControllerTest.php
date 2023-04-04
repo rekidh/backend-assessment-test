@@ -76,6 +76,26 @@ class DebitCardControllerTest extends TestCase
     public function testCustomerCanCreateADebitCard()
     {
         // post /debit-cards
+        Passport::actingAs($this->user);
+        $this->postJson('api/debit-cards', [
+            'type' => 'creditTestEntry'
+        ])
+            ->assertValid(['type']) // correctly validated
+            ->assertCreated() // returned status 201
+            ->assertJson(
+                fn ($json) => $json->where('type', 'creditTestEntry')->etc()
+            )
+            ->assertJsonStructure([  // check if the return json has right keys
+                'id',
+                'type',
+                'number',
+                'expiration_date',
+                'is_active',
+            ]);
+
+        $this->assertDatabaseHas('debit_cards', [
+            'type' => 'creditTestEntry'
+        ]);
     }
 
     public function testCustomerCanSeeASingleDebitCardDetails()
